@@ -55,17 +55,16 @@ func checkUser(c *gin.Context) (*db.User, uint64, error) {
 	return user, version, nil
 }
 
-func nextGame(c *gin.Context) {
+func nextGameCheckUser(){
 	user, _, err := checkUser(c)
-	if err != nil {
+		if err != nil {
 		log.Println(strings.TrimSpace(err.Error()))
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
+}
 
-	training_run := db.TrainingRun{
-		Active: true,
-	}
+func nextGameCheckDB(){
 	// TODO(gary): Only really supports one training run right now...
 	err = db.GetDB().Where(&training_run).First(&training_run).Error
 	if err != nil {
@@ -73,7 +72,9 @@ func nextGame(c *gin.Context) {
 		c.String(http.StatusBadRequest, "Invalid training run")
 		return
 	}
+}
 
+func nextGameCheckNetwork(){
 	network := db.Network{}
 	err = db.GetDB().Where("id = ?", training_run.BestNetworkID).First(&network).Error
 	if err != nil {
@@ -81,6 +82,22 @@ func nextGame(c *gin.Context) {
 		c.String(500, "Internal error")
 		return
 	}
+
+}
+
+func nextGame(c *gin.Context) {
+	
+	if(!nextGameCheckUser(c)) return;
+	
+
+	training_run := db.TrainingRun{
+		Active: true,
+	}
+
+        if(!nextGameCheckDB(training_run)) return;
+	
+	if(!nextGameCheckNetwork(training_run)) return;
+	
 
 	if user != nil {
 		var match []db.Match
